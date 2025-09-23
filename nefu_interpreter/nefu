@@ -1,0 +1,3 @@
+#!/bin/zsh
+# Simple wrapper to run .nfu files with the Nefu interpreter
+python3 /Users/nebuff/ネフ/nefu_interpreter/nefu.py "$@"
