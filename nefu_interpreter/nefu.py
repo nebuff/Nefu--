@@ -1,7 +1,15 @@
+# 0.5 Alpha Nefu Interpreter with choice support
+
 import sys
 import time
 import re
 import os
+import platform
+
+if platform.system() != "Windows":
+    import curses
+else:
+    import msvcrt
 
 class LoopBreakException(Exception):
     pass
@@ -18,7 +26,6 @@ class NefuInterpreter:
     def parse_file(self):
         with open(self.filename, encoding='utf-8') as f:
             self.lines = [line.rstrip('\n') for line in f]
-
         # Preprocess labels
         for idx, line in enumerate(self.lines):
             if line.strip().startswith('lbl '):
@@ -54,8 +61,6 @@ class NefuInterpreter:
 
     def eval_condition(self, cond):
         cond = self.substitute_vars(cond).strip()
-
-        # comparisons
         m = re.match(r'(.+?)\s*(==|=|!=|<=|>=|<|>)\s*(.+)', cond)
         if m:
             left, op, right = m.groups()
@@ -72,8 +77,6 @@ class NefuInterpreter:
             if op == ">": return left_val > right_val
             if op == "<=": return left_val <= right_val
             if op == ">=": return left_val >= right_val
-
-        # boolean literal
         return cond.lower() == "true"
 
     def find_matching_closing(self, start_index):
@@ -81,8 +84,7 @@ class NefuInterpreter:
         i = start_index
         while i < len(self.lines):
             l = self.lines[i].strip()
-            if '{' in l:
-                depth += l.count('{')
+            if '{' in l: depth += l.count('{')
             if '}' in l:
                 depth -= l.count('}')
                 if depth == 0:
@@ -107,48 +109,64 @@ class NefuInterpreter:
                 i = self.current_line + 1
         self.current_line = saved_current
 
-    def execute_line(self, line):
-        if line == "}":
-            return
+    # New: TUI choice menu
+    def handle_choice(self, title, options):
+        if platform.system() == "Windows":
+            selected = 0
+            while True:
+                os.system('cls')
+                print(f":{title}")
+                for i, opt in enumerate(options):
+                    prefix = "→ " if i == selected else "  "
+                    print(f"{prefix}{opt}")
+                key = msvcrt.getch()
+                if key == b'\xe0':
+                    key2 = msvcrt.getch()
+                    if key2 == b'H': selected = (selected - 1) % len(options)
+                    elif key2 == b'P': selected = (selected + 1) % len(options)
+                elif key == b'\r':
+                    return selected
+        else:
+            def _curses_choice(stdscr):
+                curses.curs_set(0)
+                selected = 0
+                while True:
+                    stdscr.clear()
+                    stdscr.addstr(f":{title}\n")
+                    for i, opt in enumerate(options):
+                        if i == selected:
+                            stdscr.addstr(f"> {opt}\n", curses.A_REVERSE)
+                        else:
+                            stdscr.addstr(f"  {opt}\n")
+                    key = stdscr.getch()
+                    if key == curses.KEY_UP: selected = (selected - 1) % len(options)
+                    elif key == curses.KEY_DOWN: selected = (selected + 1) % len(options)
+                    elif key in (10, 13): return selected
+            selected = curses.wrapper(_curses_choice)
+        return selected
 
-        # variable assignment
+    def execute_line(self, line):
+        if line == "}": return
         if '>!vars/' in line:
             value, var = line.split('>!vars/', 1)
             var = var.rstrip('!').strip()
             value = self.substitute_vars(value.strip())
             self.variables[var] = self.strip_quotes(value)
             return
-
-        # wait
         if line.startswith('wait '):
             t = line[5:].strip()
-            if t.endswith('ms'):
-                time.sleep(float(t[:-2]) / 1000.0)
-            elif t.endswith('s'):
-                time.sleep(float(t[:-1]))
-            else:
-                raise Exception(f"Invalid wait duration: {t}")
+            if t.endswith('ms'): time.sleep(float(t[:-2])/1000.0)
+            elif t.endswith('s'): time.sleep(float(t[:-1]))
+            else: raise Exception(f"Invalid wait duration: {t}")
             return
-
-        # dsp clear
         if line == 'dsp clear':
             os.system('cls' if os.name == 'nt' else 'clear')
             return
-
-        # goto
         if line.startswith('goto '):
             label = line[5:].strip()
-            if label in self.labels:
-                self.current_line = self.labels[label]
-                return
-            else:
-                raise Exception(f"Unknown label: {label}")
-
-        # lbl
-        if line.startswith('lbl '):
-            return
-
-        # dsp
+            if label in self.labels: self.current_line = self.labels[label]; return
+            else: raise Exception(f"Unknown label: {label}")
+        if line.startswith('lbl '): return
         if line.startswith('dsp '):
             content = line[4:].strip()
             if content.startswith('{'):
@@ -174,8 +192,6 @@ class NefuInterpreter:
                         line_out += self.strip_quotes(p)
                 print(line_out)
                 return
-
-        # getinput
         if line.startswith('getinput'):
             block_start = self.current_line + 1
             block_end = self.find_matching_closing(block_start)
@@ -196,15 +212,26 @@ class NefuInterpreter:
                 prompt = ' '.join(prompt_lines)
                 user_input = input(prompt + ' ')
             else:
-                for pl in prompt_lines:
-                    print(pl)
+                for pl in prompt_lines: print(pl)
                 user_input = input()
-            if var:
-                self.variables[var] = user_input
+            if var: self.variables[var] = user_input
             self.current_line = block_end
             return
-
-        # if ... else ...
+        # New: choice command
+        if line.startswith('choice '):
+            m = re.match(r'choice title=(["\'])(.*?)\1\s*{', line)
+            if not m: raise Exception("Malformed choice syntax")
+            title = m.group(2)
+            block_start = self.current_line + 1
+            block_end = self.find_matching_closing(block_start)
+            options = []
+            for i in range(block_start, block_end):
+                l = self.lines[i].strip()
+                if re.match(r'\d+\)', l): options.append(l.split(')',1)[1].strip())
+            selected_index = self.handle_choice(title, options)
+            self.variables["choice_selected"] = str(selected_index)
+            self.current_line = block_end
+            return
         if line.startswith('if '):
             cond_text = None
             if line.endswith('{'):
@@ -215,22 +242,18 @@ class NefuInterpreter:
                 if next_idx < len(self.lines) and self.lines[next_idx].strip().startswith('{'):
                     cond_text = line[3:].strip()
                     block_start = next_idx + 1
-                else:
-                    raise Exception("Malformed if: missing '{'")
+                else: raise Exception("Malformed if: missing '{'")
             block_end_idx = self.find_matching_closing(block_start)
             cond_true = self.eval_condition(cond_text)
             if cond_true:
                 self.run_block(block_start, block_end_idx)
                 self.current_line = block_end_idx
-                # skip else block if exists
                 after_else_idx = block_end_idx + 1
                 if after_else_idx < len(self.lines):
                     next_line = self.lines[after_else_idx].strip()
                     if next_line.startswith('else'):
-                        if next_line.endswith('{'):
-                            else_block_start = after_else_idx + 1
-                        else:
-                            else_block_start = after_else_idx + 2
+                        if next_line.endswith('{'): else_block_start = after_else_idx + 1
+                        else: else_block_start = after_else_idx + 2
                         else_block_end = self.find_matching_closing(else_block_start)
                         self.current_line = else_block_end
                 return
@@ -239,22 +262,34 @@ class NefuInterpreter:
                 if after_else_idx < len(self.lines):
                     next_line = self.lines[after_else_idx].strip()
                     if next_line.startswith('else'):
-                        if next_line.endswith('{'):
-                            else_block_start = after_else_idx + 1
-                        else:
-                            else_block_start = after_else_idx + 2
+                        if next_line.endswith('{'): else_block_start = after_else_idx + 1
+                        else: else_block_start = after_else_idx + 2
                         else_block_end = self.find_matching_closing(else_block_start)
                         self.run_block(else_block_start, else_block_end)
                         self.current_line = else_block_end
                         return
                 self.current_line = block_end_idx
                 return
-
-        # exit
-        if line == "exit":
-            self.running = False
-            return
-
+        if line.startswith('repeat '):
+            count = line[7:].strip()
+            block_start = self.current_line + 1
+            block_end = self.find_matching_closing(block_start)
+            if count == "~":
+                try:
+                    while True: self.run_block(block_start, block_end)
+                except LoopBreakException: pass
+                self.current_line = block_end
+                return
+            else:
+                try: times = int(count)
+                except: raise Exception(f"Invalid repeat count: {count}")
+                for _ in range(times):
+                    try: self.run_block(block_start, block_end)
+                    except LoopBreakException: break
+                self.current_line = block_end
+                return
+        if line == "exit": self.running = False; return
+        if line.startswith('else'): return
         raise Exception(f"Unknown command: {line}")
 
 def main():
