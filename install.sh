@@ -2,6 +2,8 @@
 
 NEFU_URL="https://raw.githubusercontent.com/nebuff/Nefu--/refs/heads/main/nefu_interpreter/nefu.py"
 INSTALL_PATH="/usr/local/bin/nefu"
+VSIX_URL="https://github.com/nebuff/Nefu--/raw/main/nefu-syntax-for-vscode.vsix"
+VSIX_FILE="/tmp/nefu-syntax-for-vscode.vsix"
 
 echo "Welcome to Nefu installer!"
 
@@ -61,7 +63,6 @@ install_nefu_unix() {
         exit 1
     fi
 
-    # Make it executable
     sudo chmod +x "$INSTALL_PATH"
 
     # Ensure shebang line exists
@@ -76,7 +77,7 @@ install_nefu_unix() {
         fi
     fi
 
-    echo "Nefu installed/updated successfully!"
+    echo "✅ Nefu interpreter installed at $INSTALL_PATH"
     echo "Run programs using: nefu <file.nfu>"
 }
 
@@ -85,9 +86,7 @@ install_windows() {
 
     NEFU_DIR="$USERPROFILE\\Nefu"
     NEFU_BATCH="$NEFU_DIR\\nefu.bat"
-    EXISTING=0
     if [ -f "$NEFU_DIR\\nefu.py" ]; then
-        EXISTING=1
         read -p "Existing Nefu installation found in $NEFU_DIR. Update/overwrite? [y/n]: " REINSTALL
         if [[ "$REINSTALL" != "y" && "$REINSTALL" != "Y" ]]; then
             echo "Skipping installation."
@@ -98,12 +97,32 @@ install_windows() {
     mkdir -p "$NEFU_DIR"
     curl -fsSL "$NEFU_URL" -o "$NEFU_DIR\\nefu.py"
 
-    # Create a wrapper batch file
     echo "@echo off
 python \"$NEFU_DIR\\nefu.py\" %*" > "$NEFU_BATCH"
 
     echo "Please ensure $NEFU_DIR is in your PATH, then run: nefu <file.nfu>"
     echo "Windows setup finished."
+}
+
+install_vscode_extension() {
+    if command -v code >/dev/null 2>&1; then
+        read -p "Do you want to install the Nefu VS Code extension? [y/n]: " EXT_CHOICE
+        if [[ "$EXT_CHOICE" == "y" || "$EXT_CHOICE" == "Y" ]]; then
+            echo "Downloading Nefu VS Code extension..."
+            curl -fsSL "$VSIX_URL" -o "$VSIX_FILE"
+            if [ $? -ne 0 ]; then
+                echo "Failed to download VSIX file."
+                return
+            fi
+            echo "Installing extension..."
+            code --install-extension "$VSIX_FILE" --force
+            echo "✅ Nefu syntax highlighting installed in VS Code!"
+        else
+            echo "Skipped VS Code extension installation."
+        fi
+    else
+        echo "VS Code not detected. Skipping extension installation."
+    fi
 }
 
 # Main
@@ -112,11 +131,13 @@ case "$OS" in
         install_python_mac
         check_existing_unix
         install_nefu_unix
+        install_vscode_extension
         ;;
     Linux)
         install_python_linux
         check_existing_unix
         install_nefu_unix
+        install_vscode_extension
         ;;
     CYGWIN*|MINGW*|MSYS*)
         install_windows
