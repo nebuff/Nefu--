@@ -20,12 +20,12 @@ iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com
 
 ## To-Do
 - [x] Create Installer SH
+- [x] TUI Choices
 - [ ] Complete Wiki
 - [ ] Complete If Statements
 - [ ] Add Color Support
 - [ ] TUI?
 - [ ] Packages (Community can Add Features to Nefu ネフ
-- [ ] TUI Choices
 
 ---
 
