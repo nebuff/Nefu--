@@ -1,4 +1,3 @@
-# nefu interperator 0.3 alpha
 import sys
 import time
 import re
