@@ -25,6 +25,7 @@ iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com
 - [ ] Add Color Support
 - [ ] TUI?
 - [ ] Packages (Community can Add Features to Nefu ネフ
+- [ ] TUI Choices
 
 ---
 
