@@ -7,7 +7,7 @@ If you are Interested in more In-Depth Guides go to our Wiki in our Github!
 If you are on Mac or Debian Linux, Please use Unix 1-Liner
 
 ```unix
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/nebuff/Nefu--/main/install.sh)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/nebuff/Nefu--/main/install.sh)"
 ```
 ```windows
 iex (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/nebuff/Nefu--/main/install.sh')
