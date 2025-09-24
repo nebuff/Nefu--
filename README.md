@@ -6,6 +6,12 @@ If you are Interested in more In-Depth Guides go to our Wiki in our Github!
 
 If you are on Mac or Debian Linux, Please use Unix 1-Liner
 
+> [!NOTE]
+> This installer supports Windows, Mac and Debian Linux
+
+> [!TIP]
+> You can use this Installer to Automatically install our Sytax Highlighting VS Code Extension
+
 ```unix
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/nebuff/Nefu--/main/install.sh)"
 ```
