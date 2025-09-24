@@ -1,210 +1,232 @@
-# Nefu Basic Commands
-## If you are looking for more Documentation, Look into the Wiki on our Github!
-This document covers **basic, foundational commands** in Nefu that are simple to use and appear in almost every program. These are the building blocks for interactivity, output, and control flow, without including more complex features like packages.
+# Nefu Scripting Basics
+
+If you are Interested in more In-Depth Guides go to our Wiki in our Github!
 
 ---
 
-## 1. `wait`
+## Basic Commands
 
-Pauses program execution for a specified amount of time.
+### 1. `dsp` — Display text
 
-**Syntax:**
+The `dsp` command shows text on the screen.
 
 ```nefu
-wait <time>
+# Single line
+dsp "Hello, world!"
+
+# Multiple lines
+dsp {
+    "Welcome to Nefu!"
+    "This is version 1.2."
+    "Have fun scripting!"
+}
 ```
 
-**Parameters:**
-
-- `<time>`: Duration to wait. Examples: `1s` for 1 second, `500ms` for half a second.
+- Quotes `""` are required around text.
+    
+- Multiline `dsp { ... }` prints each line separately.
+    
+- `dsp clear` clears the screen:
     
 
-**Examples:**
-
-```nefu
-wait 2s      # Waits for 2 seconds
-wait 500ms   # Waits for 0.5 seconds
-```
-
----
-
-## 2. `dsp clear`
-
-Clears the current display or console output.
-
-**Syntax:**
-
 ```nefu
 dsp clear
-```
-
-**Example:**
-
-```nefu
-dsp clear
+dsp "Screen cleared!"
 ```
 
 ---
 
-## 3. `goto`
+### 2. `getinput` — Ask for input
 
-Jumps to a **label** elsewhere in the program.
-
-**Syntax:**
-
-```nefu
-goto <label_name>
-```
-
-**Example:**
-
-```nefu
-lbl start
-# ...some code...
-goto start  # jumps back to the 'start' label
-```
-
----
-
-## 4. `lbl`
-
-Defines a **label** to mark a location in the program.
-
-**Syntax:**
-
-```nefu
-lbl <label_name>
-```
-
-**Example:**
-
-```nefu
-lbl math  # creates a label called 'math'
-```
-
----
-
-## 5. `keypress`
-
-Checks if a certain key is pressed. Usually used inside a repeat or input block.
-
-**Syntax:**
-
-```nefu
-keypress = <key> {
-    # code to run when key is pressed
-}
-```
-
-**Example:**
-
-```nefu
-keypress = enter {
-    dsp {"You pressed Enter"}
-}
-```
-
----
-
-## 6. `getinput`
-
-Prompts the user for input.
-
-**Syntax:**
+The `getinput` block asks the user to type something.
 
 ```nefu
 getinput {
-    dsp {"Prompt text"}
-    !getinput!>!vars/var_name!
-}
-```
-
-**Example:**
-
-```nefu
-getinput {
-    dsp {"Enter your name:"}
+    dsp "Enter your name:"
+    input
     !getinput!>!vars/name!
 }
+
+dsp "Hello!" !vars/name!
 ```
 
----
+- `input` indicates where the text will be typed.
+    
+- `!getinput!>!vars/name!` saves the input into a variable called `name`.
+    
 
-## 7. Inline commands in `dsp`
-
-Inside a `dsp` block, simple commands like `*wait1s*` can be used to pause or control timing.
-
-**Example:**
+You can also put input inline:
 
 ```nefu
-dsp {
-    "Bum"
-    *wait1s*
-    "Bum"
-    *wait1s*
-    "Bum"
+getinput {
+    dsp "Enter your age:" input
+    !getinput!>!vars/age!
 }
 ```
 
 ---
 
-## 8. `repeat`
+### 3. Variables
 
-Runs a block of code multiple times. The repeat count can be a number, a variable, or infinite.
-
-**Syntax:**
+Variables are boxes that hold information.
 
 ```nefu
-repeat <amount> {
-    # code to run
+!vars/name! = "Nefu"
+dsp "Your name is" !vars/name!
+```
+
+- Use `!vars/...!` to access variables.
+    
+- Variables can be set with `= "value"` or via `getinput`.
+    
+
+---
+
+### 4. `wait` — Pause the program
+
+The `wait` command pauses execution for a set time.
+
+```nefu
+dsp "Please wait..."
+wait 2s
+dsp "Done!"
+```
+
+- Use `s` for seconds or `ms` for milliseconds.
+    
+
+---
+
+### 5. Conditional Statements (`if` / `else`)
+
+You can run code based on conditions:
+
+```nefu
+if !vars/age! > 18 {
+    dsp "You are an adult."
+} else {
+    dsp "You are under 18."
 }
 ```
 
-**Examples:**
+- Supports `=`, `==`, `!=`, `<`, `>`, `<=`, `>=`.
+    
+- The `else` block is optional.
+    
+- Conditions can include variables and numbers.
+    
 
-Repeat 5 times:
+---
+
+### 6. Loops (`repeat`)
+
+Run a block of code multiple times.
 
 ```nefu
-repeat 5 {
-    dsp {"Hello!"}
+repeat 3 {
+    dsp "This runs 3 times"
 }
 ```
 
-Using a variable:
-
-```nefu
-!vars/n!>3
-
-repeat !vars/n! {
-    dsp {"Looped!"}
-}
-```
-
-Infinite loop using `~`:
+- You can also repeat infinitely with `~`:
+    
 
 ```nefu
 repeat ~ {
-    dsp {"Running..."}
+    dsp "Press Enter to stop"
+    keypress = enter
+    exit loop
+}
+```
+
+- Use `exit loop` to break out of an infinite loop.
+    
+
+---
+
+### 7. `exit` — Stop the program
+
+```nefu
+dsp "Goodbye!"
+exit
+dsp "This line will not run"
+```
+
+- Stops the script immediately.
+    
+
+---
+
+### 8. Keypress (`keypress`)
+
+Detect simple key input:
+
+```nefu
+keypress = enter   # Waits for Enter
+keypress = esc     # Waits for ESC
+```
+
+- Only basic keys are supported.
+    
+- Pressing the required key continues the script.
+    
+
+---
+
+## Example Program
+
+This program demonstrates input, variables, conditions, loops, and display:
+
+```nefu
+dsp clear
+getinput {
+    dsp "Enter your name:" input
+    !getinput!>!vars/name!
+}
+
+dsp "Hello!" !vars/name!
+
+getinput {
+    dsp "Enter your age:" input
+    !getinput!>!vars/age!
+}
+
+if !vars/age! > 18 {
+    dsp "You are an adult."
+} else {
+    dsp "You are under 18."
+}
+
+repeat 3 {
+    dsp "Counting..." !vars/name!
     wait 1s
 }
-```
 
-### Exiting Loops
-
-You can exit a loop early using the `exit loop` command. This is useful for keypress handling or conditional breaks.
-
-**Example:**
-
-```nefu
-repeat ~ {
-    keypress = esc {
-        exit loop
-    }
-    dsp {"Press ESC to exit"}
-    wait 500ms
-}
+dsp "End of program."
+exit
 ```
 
 ---
 
-These basic commands form the core of most Nefu programs and allow for simple input, output, pauses, repetition, and program flow control.
+### Summary of Features
+
+- `dsp` / `dsp clear` — display text or clear screen
+    
+- `getinput` — prompt user and store in variable
+    
+- Variables `!vars/...!` — store and retrieve data
+    
+- `wait` — pause execution
+    
+- `if` / `else` — conditional branching
+    
+- `repeat` — loops (fixed count or infinite)
+    
+- `exit loop` — break infinite loops
+    
+- `keypress` — detect Enter or ESC
+    
+- `exit` — terminate the program
+    
+
+This guide covers all the core features of Nefu to build small scripts qui
