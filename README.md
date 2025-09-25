@@ -4,6 +4,9 @@ If you are Interested in more In-Depth Guides go to our Wiki in our Github!
 
 ### Install Nefu
 
+> [!WARNING]
+> Nefu is ONLY Developed by 1 Person, Updates are Slow
+
 If you are on Mac or Debian Linux, Please use Unix 1-Liner
 
 > [!NOTE]
